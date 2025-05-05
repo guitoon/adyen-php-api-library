@@ -15,6 +15,7 @@ namespace Adyen\Service;
 
 use Adyen\AdyenException;
 use Adyen\Client;
+use Adyen\Environment;
 use Adyen\Service;
 use Adyen\Model\PosMobile\ObjectSerializer;
 
@@ -36,7 +37,14 @@ class PosMobileApi extends Service
         parent::__construct($client);
 
         // Create the baseUrl based on live/test and optional live-url-prefix
-        $this->baseURL = $this->createBaseUrl("https://checkout-test.adyen.com/checkout/possdk/v68");
+        $config = $this->getClient()->getConfig();
+        if ($config->getEnvironment() === Environment::LIVE) {
+            $host = sprintf('https://%s-checkout-live.adyenpayments.com', $config->get('prefix'));
+        } else {
+            $host = 'https://checkout-test.adyen.com';
+        }
+
+        $this->baseURL = $this->createBaseUrl(sprintf('%s/checkout/possdk/v68', $host));
     }
 
     /**
@@ -49,7 +57,7 @@ class PosMobileApi extends Service
     */
     public function createCommunicationSession(\Adyen\Model\PosMobile\CreateSessionRequest $createSessionRequest, array $requestOptions = null): \Adyen\Model\PosMobile\CreateSessionResponse
     {
-        $endpoint = $this->baseURL . "/sessions";
+        $endpoint = $this->baseURL . '/sessions';
         $response = $this->requestHttp($endpoint, strtolower('POST'), (array) $createSessionRequest->jsonSerialize(), $requestOptions);
         return ObjectSerializer::deserialize($response, \Adyen\Model\PosMobile\CreateSessionResponse::class);
     }
